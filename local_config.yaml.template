@@ -1,0 +1,20 @@
+NEWAPI_API_KEY: "your_api_key_here"
+
+# 设定研究领域为计算机科学
+topic: "Computer Science"
+
+# 模型配置
+model: "qwen-max"
+
+# 抓取相关配置
+categories: ["Artificial Intelligence", "Robotics", "Computer Vision and Pattern Recognition"]
+threshold: 7
+
+# 详细描述你的研究兴趣
+interest: |
+  1. Focus on Vision-Language-Action (VLA) models and robotic foundation models.
+  2. Research on memory architectures, such as long-term memory, episodic memory, or working memory for robotic agents.
+  3. Mobile manipulation tasks involving temporal reasoning or cross-episodic learning.
+  4. Interested in how robots store and retrieve past experiences for navigation and object manipulation.
+  5. Do NOT care about general hardware design or traditional PID control without learning-based memory.
+  6. Disregard papers only focusing on pure LLM memory without physical embodiment or robotic action.

@@ -9,6 +9,7 @@ import json
 from typing import Optional, Sequence, Union
 
 import openai
+openai.api_base = "http://35.220.164.252:3888/v1"
 import tqdm
 from openai import openai_object
 import copy
@@ -69,7 +70,8 @@ def openai_completion(
             - an openai_object.OpenAIObject object (if return_text is False)
             - a list of objects of the above types (if decoding_args.n > 1)
     """
-    is_chat_model = "gpt-3.5" in model_name or "gpt-4" in model_name
+    # is_chat_model = "gpt-3.5" in model_name or "gpt-4" in model_name
+    is_chat_model = True
     is_single_prompt = isinstance(prompts, (str, dict))
     if is_single_prompt:
         prompts = [prompts]
