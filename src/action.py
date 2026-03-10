@@ -243,11 +243,17 @@ def generate_body(topic, categories, interest, threshold):
     else:
         papers = get_papers(abbr)
     if interest:
+        relevancy_kwargs = {
+            "query": {"interest": interest},
+            "threshold_score": threshold,
+            "num_paper_in_prompt": 16,
+        }
+        if os.environ.get("OPENAI_MODEL_NAME"):
+            relevancy_kwargs["model_name"] = os.environ["OPENAI_MODEL_NAME"]
+            
         relevancy, hallucination = generate_relevance_score(
             papers,
-            query={"interest": interest},
-            threshold_score=threshold,
-            num_paper_in_prompt=16,
+            **relevancy_kwargs
         )
         body = "<br><br>".join(
             [
@@ -281,16 +287,22 @@ if __name__ == "__main__":
     with open(args.config, "r") as f:
         config = yaml.safe_load(f)
 
-    if "OPENAI_API_KEY" not in os.environ:
-        raise RuntimeError("No openai api key found")
-    openai.api_key = os.environ.get("OPENAI_API_KEY")
+    api_key = os.environ.get("NEWAPI_API_KEY") or os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("No api key found (NEWAPI_API_KEY or OPENAI_API_KEY)")
+    openai.api_key = api_key
 
     topic = config["topic"]
-    categories = config["categories"]
+    categories = config.get("categories", [])
     from_email = os.environ.get("FROM_EMAIL")
     to_email = os.environ.get("TO_EMAIL")
-    threshold = config["threshold"]
-    interest = config["interest"]
+    threshold = config.get("threshold", 7)
+    interest = config.get("interest", "")
+    
+    # Set model so utils.openai_completion uses the expected model
+    if config.get("model"):
+        os.environ["OPENAI_MODEL_NAME"] = config["model"]
+
     body = generate_body(topic, categories, interest, threshold)
     with open("digest.html", "w") as f:
         f.write(body)

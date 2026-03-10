@@ -1,6 +1,9 @@
 # 设定研究领域为计算机科学
 topic: "Computer Science"
 
+# 模型配置
+model: "gpt-4.1"
+
 # 建议增加 "Robotics" 分类，因为 VLA 和 Manipulation 论文多发表在此处
 categories: ["Artificial Intelligence", "Robotics", "Computer Vision and Pattern Recognition"]
 

